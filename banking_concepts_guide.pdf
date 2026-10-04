@@ -1,0 +1,83 @@
+%PDF-1.4
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+3 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources <<
+    /Font <<
+      /F1 4 0 R
+    >>
+  >>
+  /Contents 5 0 R
+>>
+endobj
+4 0 obj
+<<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica
+>>
+endobj
+5 0 obj
+<<
+  /Length 720
+>>
+stream
+BT
+/F1 16 Tf
+50 720 Td
+(Banking Policy and Concepts Guide) Tj
+/F1 12 Tf
+0 -30 Td
+(1. Account Minimums: Savings Account minimum balance is 2000 INR.) Tj
+0 -20 Td
+(   Current Account minimum balance is 10000 INR.) Tj
+0 -30 Td
+(2. Transfer Limits: UPI daily limit is 100000 INR.) Tj
+0 -20 Td
+(   IMPS daily limit is 500000 INR with instant settlement.) Tj
+0 -20 Td
+(   RTGS minimum transfer amount is 200000 INR.) Tj
+0 -30 Td
+(3. Card Limits: Platinum Debit Card ATM withdrawal limit is 50000 INR.) Tj
+0 -20 Td
+(   To report lost or stolen cards, call toll-free 1800-000-000.) Tj
+0 -30 Td
+(4. Loan Rates: Personal loans start at 10.5% p.a. Home loans start at 8.4% p.a.) Tj
+0 -20 Td
+(   1 Year Fixed Deposit interest rate is 7.10% p.a. Senior citizens get +0.50%.) Tj
+0 -30 Td
+(5. Overdraft: Overdraft facility is available up to 80% against active fixed deposits.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000262 00000 n 
+0000000343 00000 n 
+trailer
+<<
+  /Size 6
+  /Root 1 0 R
+>>
+startxref
+1115
+%%EOF
