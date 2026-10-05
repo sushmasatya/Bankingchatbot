@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from google import genai
@@ -23,7 +24,7 @@ logger = logging.getLogger("banking-chatbot")
 
 api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key) if api_key else None
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PDF_PATH = os.path.join(BASE_DIR, "banking_concepts_guide.pdf")
@@ -273,8 +274,183 @@ class ChatResponse(BaseModel):
 # 9. API ENDPOINTS
 # ============================================================
 
-@app.get("/")
+HTML_PAGE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking AI Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; }
+        .header { background: #1e293b; border-bottom: 1px solid #334155; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .header-title { display: flex; align-items: center; gap: 12px; }
+        .header-title h1 { font-size: 1.15rem; font-weight: 600; color: #fff; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; background: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 9999px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 860px; width: 100%; margin: 0 auto; }
+        .msg { display: flex; flex-direction: column; max-width: 80%; animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .msg.user { align-self: flex-end; }
+        .msg.bot { align-self: flex-start; }
+        .bubble { padding: 12px 18px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5; word-wrap: break-word; }
+        .msg.user .bubble { background: #2563eb; color: #ffffff; border-bottom-right-radius: 4px; }
+        .msg.bot .bubble { background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-bottom-left-radius: 4px; }
+        .badge { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; padding: 2px 8px; border-radius: 6px; display: inline-block; width: fit-content; }
+        .badge.expense { background: #3730a3; color: #a5b4fc; }
+        .badge.policy { background: #065f46; color: #6ee7b7; }
+        .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .chip { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; padding: 8px 14px; border-radius: 9999px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+        .chip:hover { background: #334155; color: #fff; border-color: #64748b; }
+        .input-bar { background: #1e293b; border-top: 1px solid #334155; padding: 16px 24px; }
+        .input-form { max-width: 860px; margin: 0 auto; display: flex; gap: 12px; }
+        .input-form input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 12px 16px; color: #fff; font-size: 0.95rem; outline: none; }
+        .input-form input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .input-form button { background: #2563eb; color: #fff; border: none; border-radius: 12px; padding: 0 22px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: background 0.2s; }
+        .input-form button:hover { background: #1d4ed8; }
+        .input-form button:disabled { background: #475569; cursor: not-allowed; }
+        .links { text-align: center; margin-top: 8px; font-size: 0.78rem; color: #64748b; }
+        .links a { color: #3b82f6; text-decoration: none; }
+        .typing { display: inline-flex; gap: 4px; align-items: center; padding: 8px 14px; }
+        .typing span { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <span style="font-size: 1.5rem;">🏦</span>
+            <div>
+                <h1>Banking AI Assistant</h1>
+                <p style="font-size: 0.75rem; color: #94a3b8;">Dual-Agent: Policy RAG & Expense Analytics</p>
+            </div>
+        </div>
+        <div class="status-badge"><span class="status-dot"></span> Live on Cloud</div>
+    </div>
+
+    <div class="chat-container" id="chat">
+        <div class="msg bot">
+            <div class="bubble">
+                👋 <strong>Hello! I am your Banking AI Assistant.</strong><br><br>
+                I can assist you with:
+                <ul style="margin: 8px 0 8px 20px;">
+                    <li><strong>Personal Expenses:</strong> Check food spend, salary, highest category, total expenditure.</li>
+                    <li><strong>Banking Policies:</strong> Rules on savings accounts, credit cards, loans, ATM limits, transfer limits, and fees.</li>
+                </ul>
+                Try tapping one of the common questions below:
+                <div class="suggestions">
+                    <button class="chip" onclick="ask('How much did I spend on food?')">🍕 Food Spending</button>
+                    <button class="chip" onclick="ask('What was my highest expense category?')">📊 Highest Expense</button>
+                    <button class="chip" onclick="ask('What is the daily ATM withdrawal limit?')">🏧 ATM Limit</button>
+                    <button class="chip" onclick="ask('What is the interest-free grace period for credit cards?')">💳 Credit Card Grace Period</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-bar">
+        <form class="input-form" onsubmit="event.preventDefault(); send();">
+            <input type="text" id="userInput" placeholder="Ask a question about policies or your spending..." autocomplete="off">
+            <button type="submit" id="sendBtn">Send</button>
+        </form>
+        <div class="links">
+            API Documentation: <a href="/docs" target="_blank">Swagger /docs</a> | Health: <a href="/health" target="_blank">/health</a>
+        </div>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function ask(text) {
+            input.value = text;
+            send();
+        }
+
+        async function send() {
+            const question = input.value.trim();
+            if (!question) return;
+
+            addMessage(escapeHtml(question), 'user');
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+
+            const typingId = addTyping();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await response.json();
+                removeTyping(typingId);
+
+                const badge = data.routed_to === 'expense_agent' 
+                    ? '<span class="badge expense">📊 Personal Expense Agent</span>' 
+                    : '<span class="badge policy">📘 Policy Guide (RAG)</span>';
+
+                addMessage(badge + '<br>' + formatAnswer(data.answer), 'bot');
+            } catch (err) {
+                removeTyping(typingId);
+                addMessage('⚠️ Error communicating with server. Please try again.', 'bot');
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function addMessage(html, type) {
+            const div = document.createElement('div');
+            div.className = 'msg ' + type;
+            div.innerHTML = '<div class="bubble">' + html + '</div>';
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function addTyping() {
+            const id = 'typing-' + Date.now();
+            const div = document.createElement('div');
+            div.className = 'msg bot';
+            div.id = id;
+            div.innerHTML = '<div class="bubble typing"><span></span><span></span><span></span></div>';
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return id;
+        }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function formatAnswer(text) {
+            return escapeHtml(text).replace(/\\n/g, '<br>');
+        }
+
+        function escapeHtml(text) {
+            const p = document.createElement('p');
+            p.textContent = text;
+            return p.innerHTML;
+        }
+    </script>
+</body>
+</html>"""
+
+@app.get("/", response_class=HTMLResponse)
 def home():
+    return HTMLResponse(content=HTML_PAGE)
+
+@app.get("/status")
+def status():
     return {
         "status": "running",
         "service": "Banking AI Chatbot",
