@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 
 import pandas as pd
 from fastapi import FastAPI
@@ -11,6 +12,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import CharacterTextSplitter
 
+# Load environment variables from local .env file if present
+load_dotenv()
 
 # ============================================================
 # 1. FASTAPI APPLICATION
@@ -36,7 +39,7 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
-GEMINI_MODEL = "gemini-3.5-flash-lite"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 # ============================================================
