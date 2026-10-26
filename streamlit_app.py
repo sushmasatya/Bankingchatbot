@@ -44,7 +44,7 @@ st.markdown("""
 # 2. DEFAULT CONFIGURATION
 # ============================================================
 
-DEFAULT_API_URL = "https://bankingchatbot.onrender.com"
+DEFAULT_API_URL = "https://bankingchatbot-1.onrender.com"
 
 
 # ============================================================
