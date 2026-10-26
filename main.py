@@ -49,7 +49,7 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 
 # ============================================================
@@ -199,6 +199,36 @@ def retrieve(question, n_results=3):
 
 
 # ============================================================
+
+def call_gemini(prompt: str) -> str:
+    """Invokes Gemini model with automatic fallback to supported models."""
+    models_to_try = [
+        GEMINI_MODEL,
+        "gemini-1.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-pro"
+    ]
+    unique_models = []
+    for m in models_to_try:
+        if m and m not in unique_models:
+            unique_models.append(m)
+
+    last_error = None
+    for model_name in unique_models:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt
+            )
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            last_error = e
+            print(f"[Gemini] Attempt with '{model_name}' failed: {e}")
+            continue
+
+    raise last_error if last_error else RuntimeError("Failed to get response from Gemini API.")
+
 # 10. RAG CHATBOT
 # ============================================================
 
@@ -233,12 +263,7 @@ Customer Question:
 Answer:
 """
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt
-    )
-
-    return response.text
+    return call_gemini(prompt)
 
 
 # ============================================================
@@ -296,12 +321,7 @@ Give a simple and clear answer.
 Do not invent transaction information.
 """
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt
-    )
-
-    return response.text
+    return call_gemini(prompt)
 
 
 # ============================================================
@@ -376,12 +396,16 @@ def health():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-
-    answer = chatbot(
-        request.question
-    )
-
-    return {
-        "question": request.question,
-        "answer": answer
-    }
+    try:
+        answer = chatbot(request.question)
+        return {
+            "question": request.question,
+            "answer": answer
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "question": request.question,
+            "answer": f"⚠️ **AI Service Error**: {str(e)}\n\n*Tip: Check that `GEMINI_API_KEY` is active and correct in Render Environment Variables.*"
+        }
