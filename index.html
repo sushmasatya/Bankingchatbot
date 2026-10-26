@@ -3,153 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Bank - AI Assistant</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Marked.js for markdown rendering -->
+    <title>Banking Internal Assistant</title>
+    <!-- Marked for markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0e1117;
+            color: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .chat-scroll::-webkit-scrollbar {
-            width: 6px;
+        .main-container {
+            width: 100%;
+            max-width: 760px;
+            padding: 40px 20px 100px 20px;
+            display: flex;
+            flex-direction: column;
         }
-        .chat-scroll::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
         }
-        .chat-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 9999px;
+        .subtitle {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
         }
-        .markdown-body p { margin-bottom: 0.5rem; }
-        .markdown-body p:last-child { margin-bottom: 0; }
-        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-        .markdown-body strong { color: #f8fafc; font-weight: 600; }
-        
-        .typing-dot {
-            animation: bounce 1.4s infinite ease-in-out both;
+        .divider {
+            height: 1px;
+            background-color: #262930;
+            margin: 20px 0;
+            border: none;
         }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-            40% { transform: scale(1); opacity: 1; }
+        .status-box {
+            background-color: #12281b;
+            border: 1px solid #1a532d;
+            color: #4ade80;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 10px;
+        }
+        .chat-row {
+            background-color: #1a1c23;
+            border: 1px solid #282b35;
+            border-radius: 8px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .avatar-user {
+            background-color: #ef4444;
+        }
+        .avatar-bot {
+            background-color: #f97316;
+        }
+        .message-content {
+            flex: 1;
+            color: #f3f4f6;
+            word-break: break-word;
+        }
+        .message-content p {
+            margin-bottom: 8px;
+        }
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        .message-content ul, .message-content ol {
+            margin-left: 20px;
+            margin-bottom: 8px;
+        }
+        .message-content strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .loading-text {
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            border-top-color: #f97316;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Sticky Input Bar at Bottom */
+        .input-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #0e1117;
+            padding: 16px 20px 24px 20px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .input-wrapper {
+            width: 100%;
+            max-width: 760px;
+            display: flex;
+            align-items: center;
+            background-color: #1a1c23;
+            border: 1px solid #2e3340;
+            border-radius: 8px;
+            padding: 4px 6px 4px 14px;
+            transition: border-color 0.2s;
+        }
+        .input-wrapper:focus-within {
+            border-color: #ef4444;
+        }
+        input[type="text"] {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 0.95rem;
+            padding: 10px 0;
+            outline: none;
+        }
+        input[type="text"]::placeholder {
+            color: #6b7280;
+        }
+        .send-btn {
+            background-color: transparent;
+            border: none;
+            color: #9ca3af;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s, background-color 0.15s;
+        }
+        .send-btn:hover {
+            color: #ffffff;
+            background-color: rgba(255,255,255,0.06);
+        }
+        .send-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-center items-center p-2 sm:p-4 md:p-6 text-slate-100">
+<body>
 
-    <!-- Main Container -->
-    <div class="w-full max-w-4xl h-[92vh] flex flex-col bg-slate-900/90 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl overflow-hidden">
-        
-        <!-- Header -->
-        <header class="px-6 py-4 bg-slate-800/80 border-b border-slate-700/60 flex items-center justify-between">
-            <div class="flex items-center space-x-3.5">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white font-bold text-xl">
-                    🏦
-                </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <h1 class="font-bold text-lg text-white">Apex Banking AI</h1>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
-                            Live
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-400">Policy RAG (FAISS) + Financial Analytics (Pandas + Gemini)</p>
-                </div>
-            </div>
+    <div class="main-container">
+        <h1>Banking Internal Assistant</h1>
+        <p class="subtitle">Ask anything about banking policies, products, or procedures.</p>
 
-            <!-- Actions -->
-            <div class="flex items-center space-x-2">
-                <button onclick="clearChat()" title="Clear Chat" class="px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center space-x-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    <span>Clear</span>
-                </button>
-                <a href="/docs" target="_blank" class="px-3 py-1.5 text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg transition-colors flex items-center space-x-1">
-                    <span>API Docs</span>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-            </div>
-        </header>
+        <hr class="divider">
 
-        <!-- Chat Area -->
-        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 chat-scroll">
-            
-            <!-- Welcome Message -->
-            <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 text-sm">
-                    🏦
-                </div>
-                <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl rounded-tl-sm px-5 py-4 max-w-[85%] text-slate-200 text-sm shadow-md">
-                    <p class="font-medium text-white mb-2">👋 Welcome to Apex Bank Customer Support!</p>
-                    <p class="text-slate-300 mb-3">I'm your 24/7 AI banking concierge. You can ask me questions about:</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-3">
-                        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
-                            <span class="text-blue-400 font-semibold block mb-1">📜 Policy & Support</span>
-                            ATM limits, card protection, branch procedures, fees, dispute guidelines.
-                        </div>
-                        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
-                            <span class="text-emerald-400 font-semibold block mb-1">📊 Personal Spending</span>
-                            Food & dining totals, highest expense categories, budget analytics.
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-400">Click any prompt below or type your question to get started.</p>
-                </div>
-            </div>
-
+        <!-- Status Banner -->
+        <div class="status-box">
+            <span>✅ Ready — {{NUM_CHUNKS}} document chunks indexed.</span>
         </div>
 
-        <!-- Suggestions / Chips -->
-        <div class="px-4 sm:px-6 py-2 bg-slate-900/60 border-t border-slate-800/80 flex items-center space-x-2 overflow-x-auto text-xs no-scrollbar">
-            <span class="text-slate-500 shrink-0 font-medium">Try:</span>
-            <button onclick="askPrompt('What is the daily ATM withdrawal limit?')" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
-                💳 ATM withdrawal limit?
-            </button>
-            <button onclick="askPrompt('How much did I spend on food?')" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
-                🍕 Food expenses?
-            </button>
-            <button onclick="askPrompt('What is my highest spending category?')" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
-                📈 Highest category?
-            </button>
-            <button onclick="askPrompt('What was my total expenditure?')" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
-                💰 Total spending?
-            </button>
-            <button onclick="askPrompt('How do I report a stolen debit card?')" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
-                🔒 Lost/stolen card?
+        <hr class="divider">
+
+        <!-- Chat Messages List -->
+        <div id="chatMessages" class="chat-container">
+            <!-- Messages will appear here -->
+        </div>
+    </div>
+
+    <!-- Pinned Bottom Input Form -->
+    <div class="input-bar-container">
+        <div class="input-wrapper">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Ask a question..." 
+                autocomplete="off"
+            />
+            <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
             </button>
         </div>
-
-        <!-- Input Bar -->
-        <div class="p-3 sm:p-4 bg-slate-800/90 border-t border-slate-700/60">
-            <form id="chatForm" onsubmit="handleSubmit(event)" class="flex items-center space-x-2">
-                <input 
-                    type="text" 
-                    id="userInput" 
-                    placeholder="Ask a question about banking policies or your expenditures..." 
-                    class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    autocomplete="off"
-                />
-                <button 
-                    type="submit" 
-                    id="sendBtn"
-                    class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-3 rounded-xl transition flex items-center justify-center shadow-lg shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </button>
-            </form>
-            <div class="flex items-center justify-between text-[11px] text-slate-500 mt-2 px-1">
-                <span>⚡ Powered by Google Gemini & LangChain FAISS</span>
-                <span>Press <strong>Enter</strong> to send</span>
-            </div>
-        </div>
-
     </div>
 
     <script>
@@ -157,90 +237,68 @@
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
 
-        function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function appendMessage(role, text) {
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex items-start space-x-3 ${role === 'user' ? 'justify-end' : ''}`;
-
-            if (role === 'user') {
-                wrapper.innerHTML = `
-                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm px-5 py-3.5 max-w-[85%] text-sm shadow-md">
-                        <p class="whitespace-pre-wrap">${escapeHtml(text)}</p>
-                    </div>
-                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs font-semibold">
-                        You
-                    </div>
-                `;
-            } else {
-                const parsedHtml = marked.parse(text);
-                wrapper.innerHTML = `
-                    <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 text-sm">
-                        🏦
-                    </div>
-                    <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl rounded-tl-sm px-5 py-4 max-w-[85%] text-slate-200 text-sm shadow-md markdown-body leading-relaxed">
-                        ${parsedHtml}
-                    </div>
-                `;
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
+        });
 
-            chatMessages.appendChild(wrapper);
-            scrollToBottom();
+        function appendUserMessage(text) {
+            const row = document.createElement('div');
+            row.className = 'chat-row';
+            row.innerHTML = `
+                <div class="avatar avatar-user">🧑‍🦰</div>
+                <div class="message-content">${escapeHtml(text)}</div>
+            `;
+            chatMessages.appendChild(row);
+            window.scrollTo(0, document.body.scrollHeight);
         }
 
-        function showTypingIndicator() {
-            const id = 'typing-' + Date.now();
-            const wrapper = document.createElement('div');
-            wrapper.id = id;
-            wrapper.className = 'flex items-start space-x-3';
-            wrapper.innerHTML = `
-                <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 text-sm">
-                    🏦
-                </div>
-                <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl rounded-tl-sm px-5 py-4 text-slate-400 text-sm shadow-md flex items-center space-x-1.5">
-                    <span class="typing-dot w-2 h-2 rounded-full bg-blue-400"></span>
-                    <span class="typing-dot w-2 h-2 rounded-full bg-blue-400"></span>
-                    <span class="typing-dot w-2 h-2 rounded-full bg-blue-400"></span>
+        function appendBotLoading() {
+            const id = 'loading-' + Date.now();
+            const row = document.createElement('div');
+            row.id = id;
+            row.className = 'chat-row';
+            row.innerHTML = `
+                <div class="avatar avatar-bot">🤖</div>
+                <div class="message-content loading-text">
+                    <span class="spinner"></span>
+                    <span>Searching documents and generating answer...</span>
                 </div>
             `;
-            chatMessages.appendChild(wrapper);
-            scrollToBottom();
+            chatMessages.appendChild(row);
+            window.scrollTo(0, document.body.scrollHeight);
             return id;
         }
 
-        function removeTypingIndicator(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
+        function updateBotMessage(id, text) {
+            const row = document.getElementById(id);
+            if (row) {
+                const parsedHtml = marked.parse(text);
+                row.innerHTML = `
+                    <div class="avatar avatar-bot">🤖</div>
+                    <div class="message-content">${parsedHtml}</div>
+                `;
+                window.scrollTo(0, document.body.scrollHeight);
+            }
         }
 
-        function escapeHtml(string) {
+        function escapeHtml(text) {
             const div = document.createElement('div');
-            div.innerText = string;
+            div.innerText = text;
             return div.innerHTML;
         }
 
-        async function askPrompt(promptText) {
-            userInput.value = promptText;
-            handleSubmit(new Event('submit'));
-        }
-
-        async function handleSubmit(e) {
-            e.preventDefault();
+        async function sendMessage() {
             const query = userInput.value.trim();
             if (!query) return;
 
-            // Clear input & disable send
             userInput.value = '';
             userInput.disabled = true;
             sendBtn.disabled = true;
 
-            // Display user message
-            appendMessage('user', query);
-
-            // Show typing indicator
-            const typingId = showTypingIndicator();
+            appendUserMessage(query);
+            const loadingId = appendBotLoading();
 
             try {
                 const response = await fetch('/chat', {
@@ -249,18 +307,15 @@
                     body: JSON.stringify({ question: query })
                 });
 
-                removeTypingIndicator(typingId);
-
                 if (!response.ok) {
-                    const errText = await response.text();
-                    appendMessage('assistant', `⚠️ **Server error (${response.status})**: ${errText || 'Please verify API key and settings.'}`);
+                    const err = await response.text();
+                    updateBotMessage(loadingId, `⚠️ **Server error (${response.status})**: ${err}`);
                 } else {
                     const data = await response.json();
-                    appendMessage('assistant', data.answer || 'No response received.');
+                    updateBotMessage(loadingId, data.answer || "No response received.");
                 }
             } catch (err) {
-                removeTypingIndicator(typingId);
-                appendMessage('assistant', `⚠️ **Connection error**: Could not reach backend. If the service was sleeping, please retry in 10-15 seconds.`);
+                updateBotMessage(loadingId, "⚠️ Could not connect to the backend. Please check your network or try again in a few seconds.");
             } finally {
                 userInput.disabled = false;
                 sendBtn.disabled = false;
@@ -268,20 +323,6 @@
             }
         }
 
-        function clearChat() {
-            chatMessages.innerHTML = `
-                <div class="flex items-start space-x-3">
-                    <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 text-sm">
-                        🏦
-                    </div>
-                    <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl rounded-tl-sm px-5 py-3 max-w-[85%] text-slate-200 text-sm">
-                        Conversation cleared. How can I help you next?
-                    </div>
-                </div>
-            `;
-        }
-
-        // Auto focus input
         userInput.focus();
     </script>
 </body>

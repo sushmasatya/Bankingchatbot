@@ -47,6 +47,7 @@ if not api_key:
         "GEMINI_API_KEY environment variable is not set."
     )
 
+api_key = api_key.strip("'\" \t\r\n")
 client = genai.Client(api_key=api_key)
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
@@ -379,7 +380,10 @@ HTML_PATH = os.path.join(BASE_DIR, "index.html")
 def home():
     if os.path.exists(HTML_PATH):
         with open(HTML_PATH, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
+            content = f.read()
+            num_chunks = len(chunks) if 'chunks' in globals() else 120
+            content = content.replace("{{NUM_CHUNKS}}", str(num_chunks))
+            return HTMLResponse(content=content)
     return HTMLResponse("<h2>Banking AI Chatbot is running</h2>")
 
 @app.get("/health")
