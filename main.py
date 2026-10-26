@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from google import genai
@@ -352,9 +353,17 @@ class ChatRequest(BaseModel):
 # 14. HOME API
 # ============================================================
 
-@app.get("/")
-def home():
+HTML_PATH = os.path.join(BASE_DIR, "index.html")
 
+@app.get("/", response_class=HTMLResponse)
+def home():
+    if os.path.exists(HTML_PATH):
+        with open(HTML_PATH, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h2>Banking AI Chatbot is running</h2>")
+
+@app.get("/health")
+def health():
     return {
         "status": "running",
         "message": "Banking AI Chatbot is running"
