@@ -8,11 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from google import genai
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_text_splitters import CharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
@@ -20,7 +19,7 @@ load_dotenv()
 # 1. APPLICATION SETUP
 # ============================================================
 
-app = FastAPI(title="Banking AI Chatbot", version="1.0")
+app = FastAPI(title="Internal Chat Assistant", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,22 +36,31 @@ app.add_middleware(
 api_key = os.getenv("GEMINI_API_KEY", "").strip("'\" \t\r\n")
 
 # ============================================================
-# 3. VECTOR DATABASE (POLICY AGENT)
+# 3. VECTOR DATABASE (LOAD POLICY DOCUMENTS)
 # ============================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TXT_PATH = os.path.join(BASE_DIR, "banking_concepts_guide.txt")
 PDF_PATH = os.path.join(BASE_DIR, "banking_concepts_guide.pdf")
 
-if not os.path.exists(PDF_PATH):
-    raise FileNotFoundError(f"PDF file not found: {PDF_PATH}")
+documents = []
 
-loader = PyPDFLoader(PDF_PATH)
-documents = loader.load()
+if os.path.exists(TXT_PATH):
+    try:
+        documents.extend(TextLoader(TXT_PATH, encoding="utf-8").load())
+    except Exception as e:
+        print(f"Error loading TXT: {e}")
 
-text_splitter = CharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50,
-    separator="\n"
+if os.path.exists(PDF_PATH):
+    try:
+        documents.extend(PyPDFLoader(PDF_PATH).load())
+    except Exception as e:
+        print(f"Error loading PDF: {e}")
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=350,
+    chunk_overlap=40,
+    separators=["\n\n", "\n", ". ", " "]
 )
 chunks = text_splitter.split_documents(documents)
 
@@ -123,21 +131,24 @@ def ask_rag(question: str) -> str:
     q = question.lower()
     
     # 1. Retrieve context from FAISS
-    results = vector_db.similarity_search(question, k=2)
+    results = vector_db.similarity_search(question, k=3)
     context = "\n".join([doc.page_content for doc in results])
 
-    prompt = f"""You are a helpful banking assistant.
-Answer the customer's question clearly and concisely using only this context:
+    prompt = f"""You are a helpful internal banking support assistant.
+Answer the question clearly and concisely using only this context:
 {context}
 
 Question: {question}
-Answer in 1-2 friendly sentences without mentioning sources or backend files."""
+Answer in 1-2 friendly sentences without mentioning sources or file names."""
 
     ai_answer = call_gemini(prompt)
     if ai_answer:
         return ai_answer
 
-    # 2. Intelligent, clean answer formatting (no raw code or source mentions)
+    # 2. Intelligent, clean answer formatting
+    if "password" in q or "reset" in q:
+        return "To reset your password, click on **Forgot Password** on the login page to receive a secure OTP or reset link via your registered mobile number or email, then enter a new strong password."
+
     if "atm" in q or "withdrawal" in q or "card limit" in q:
         return "The daily ATM withdrawal limit for your Platinum Debit Card is **₹50,000**."
     
@@ -153,18 +164,17 @@ Answer in 1-2 friendly sentences without mentioning sources or backend files."""
     if "loan" in q or "interest" in q or "fd" in q or "deposit" in q:
         return "Personal loans start at **10.5% p.a.** and Home loans start at **8.4% p.a.** (1-year Fixed Deposit rate is **7.10% p.a.** with +0.50% for senior citizens)."
 
-    # Clean fallback: Return clean text without source tag
     if results:
         clean_text = results[0].page_content.replace("Banking Policy and Concepts Guide", "").strip()
         return clean_text
-    return "I can help with account minimums, transfer limits, ATM card limits, loan rates, and reporting lost cards."
+    return "I can help with password resets, account minimums, transfer limits, ATM card limits, and loan rates."
 
 
 def ask_expense(question: str) -> str:
     q = question.lower()
     cat_summary = ", ".join([f"{cat}: ₹{amt}" for cat, amt in category_expense.items()])
 
-    prompt = f"""You are a personal banking assistant.
+    prompt = f"""You are an internal finance assistant.
 Customer asks: "{question}"
 Account spending details:
 - Total spent: ₹{total_expense}
@@ -194,11 +204,11 @@ Provide a brief, clear, natural response."""
     if "entertainment" in q or "netflix" in q:
         return "You spent **₹649** on Entertainment (Netflix)."
 
-    if "highest" in q or "most" in q:
+    if "most" in q or "highest" in q:
         return f"Your highest spending category is **{highest_category}** with a total of **₹{highest_amount:,}**."
 
-    if "total" in q or "overall" in q:
-        return f"Your total expenditure is **₹{total_expense:,}** across 5 categories ({cat_summary})."
+    if "total" in q or "overall" in q or "expenditure" in q or "spend" in q:
+        return f"Your total expenditure is **₹{total_expense:,}** across 5 categories ({cat_summary}). Highest spending is **{highest_category}** (₹{highest_amount:,})."
 
     if "salary" in q or "income" in q:
         return "Your credited income is **₹50,000** (Salary)."
@@ -212,10 +222,10 @@ def chatbot(question: str) -> str:
     # 1. Natural conversation greetings
     greetings = ["hi", "hello", "hey", "good morning", "good evening", "good afternoon", "namaste"]
     if q in greetings or any(q.startswith(g + " ") for g in greetings):
-        return "Hello! How can I assist you with your banking policies or account expenses today?"
+        return "Hello! How can I assist you today?"
 
     if q in ["how are you", "how are you?", "who are you", "who are you?"]:
-        return "I am your Banking Assistant! You can ask me about account minimums, ATM limits, transfer rules, or your recent expenses."
+        return "I am your Internal Chat Assistant! You can ask me about company policies, password resets, account limits, or recent expenditures."
 
     if q in ["thanks", "thank you", "thank you so much", "ok thanks"]:
         return "You're very welcome! Feel free to ask if you need anything else."
@@ -224,7 +234,7 @@ def chatbot(question: str) -> str:
     expense_keywords = [
         "spent", "spend", "expenditure", "expense", "expenses",
         "spending", "food", "shopping", "bills", "travel",
-        "entertainment", "reduce", "saving", "total", "highest", "salary"
+        "entertainment", "reduce", "saving", "total", "highest", "most", "salary"
     ]
     if any(k in q for k in expense_keywords):
         return ask_expense(question)
@@ -248,7 +258,7 @@ def home():
             content = f.read()
             content = content.replace("{{NUM_CHUNKS}}", str(len(chunks)))
             return HTMLResponse(content=content)
-    return HTMLResponse("<h2>Banking Internal Assistant is running</h2>")
+    return HTMLResponse("<h2>Internal Chat Assistant is running</h2>")
 
 @app.get("/health")
 def health():

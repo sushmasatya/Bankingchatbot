@@ -7,13 +7,13 @@ import os
 # ============================================================
 
 st.set_page_config(
-    page_title="Banking Internal Assistant",
+    page_title="Internal Chat Assistant",
     page_icon="🏦",
     layout="centered"
 )
 
 # Header matching tutorial
-st.title("Banking Internal Assistant")
+st.title("Internal Chat Assistant")
 st.caption("Ask anything about banking policies, products, or procedures.")
 
 st.divider()
