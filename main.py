@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 import pandas as pd
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from google import genai
@@ -23,6 +24,14 @@ app = FastAPI(
     title="Banking AI Chatbot",
     description="Banking chatbot using FAISS, HuggingFace embeddings, Pandas and Gemini",
     version="1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
